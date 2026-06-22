@@ -654,15 +654,31 @@ function render() {
 // ── Period log (localStorage) ─────────────────────────
 const PERIOD_KEY = 'yaya_period_log';
 const SEED_DATES = [
-  '2025-12-04','2025-12-30','2026-01-25','2026-02-25',
-  '2026-03-26','2026-04-22','2026-05-20','2026-06-14'
+  // 2022
+  '2022-11-27','2022-12-25',
+  // 2023
+  '2023-01-25','2023-02-24','2023-03-24','2023-04-21',
+  '2023-05-21','2023-06-18','2023-07-17','2023-08-15',
+  '2023-09-14','2023-10-13','2023-11-11','2023-12-10',
+  // 2024
+  '2024-01-07','2024-02-09','2024-03-10','2024-04-10',
+  '2024-05-13','2024-06-10','2024-07-08','2024-08-06',
+  '2024-09-04','2024-10-02','2024-10-31','2024-11-28','2024-12-28',
+  // 2025
+  '2025-01-25','2025-02-24','2025-03-23',
+  '2025-12-04','2025-12-30',
+  // 2026
+  '2026-01-25','2026-02-25','2026-03-26',
+  '2026-04-22','2026-05-20','2026-06-14'
 ];
 
 function loadPeriods() {
   const s = localStorage.getItem(PERIOD_KEY);
-  if (s) return JSON.parse(s);
-  savePeriods(SEED_DATES);
-  return [...SEED_DATES];
+  const stored = s ? JSON.parse(s) : [];
+  // Merge stored + seed (union), always include full seed
+  const merged = [...new Set([...SEED_DATES, ...stored])].sort();
+  savePeriods(merged);
+  return merged;
 }
 function savePeriods(dates) {
   localStorage.setItem(PERIOD_KEY, JSON.stringify(dates.sort()));
