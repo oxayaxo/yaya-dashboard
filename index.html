@@ -215,6 +215,37 @@ canvas { display: block; width: 100%; }
 .wd-bar-row { display: flex; align-items: center; gap: 2px; }
 .wd-bar-track { flex: 1; height: 3px; background: var(--border); border-radius: 2px; position: relative; }
 .wd-bar-fill  { position: absolute; top: 0; height: 100%; border-radius: 2px; }
+
+/* ── Koyomi & Calendar ─────────────────────────────── */
+.cal-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:20px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav-title{font-size:1rem;font-weight:700}
+.cal-nav button{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.9rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-hdr{text-align:center;font-size:0.65rem;color:var(--muted);padding:4px 0}
+.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 3px;cursor:pointer;transition:border-color .15s;min-height:70px;display:flex;flex-direction:column;gap:1px}
+.cal-cell:hover{border-color:var(--accent)}
+.cal-empty{background:transparent!important;border-color:transparent!important;cursor:default!important;pointer-events:none}
+.cal-today{border-color:var(--accent)!important;background:rgba(96,165,250,.1)!important}
+.cal-day-num{font-size:0.72rem;font-weight:700}
+.cal-rokuyo{font-size:0.52rem}
+.cal-score{font-size:0.62rem;font-weight:600}
+.cal-tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:1px}
+.cal-tag{font-size:0.48rem;padding:1px 4px;border-radius:3px;line-height:1.5}
+.cat-super{background:rgba(245,158,11,.14)!important;border-color:#f59e0b66!important}
+.cat-best{background:rgba(192,132,252,.12)!important;border-color:#c084fc66!important}
+.cat-good{background:rgba(52,211,153,.09)!important;border-color:#34d39966!important}
+.cat-caution{opacity:.65}
+.cat-ng{background:rgba(239,68,68,.12)!important;border-color:#ef444466!important}
+.cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:0.68rem;color:var(--muted)}
+.leg2{display:flex;align-items:center;gap:4px}
+.leg2-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.bestdays-wrap{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 20px;margin-bottom:20px}
+.bestday-section{margin-bottom:10px}
+.bestday-label{font-size:0.72rem;color:var(--muted);margin-bottom:8px}
+.bestday-chips{display:flex;flex-wrap:wrap;gap:8px}
+.bestday-chip{border:1px solid;border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:600;cursor:pointer;transition:opacity .2s}
+.bestday-chip:hover{opacity:.8}
 </style>
 </head>
 <body>
@@ -265,6 +296,27 @@ canvas { display: block; width: 100%; }
   <div class="section-title" style="margin-bottom:14px">📅 直近7日間の推移</div>
   <div class="week-wrap">
     <div class="week-grid" id="weekGrid"></div>
+  </div>
+
+  <!-- Best days -->
+  <div class="section-title" style="margin-bottom:14px">🔥 今月のベスト日</div>
+  <div class="bestdays-wrap" id="bestdays"></div>
+
+  <!-- Monthly calendar -->
+  <div class="section-title" style="margin-bottom:14px">📅 月間カレンダー（開運×体の波）</div>
+  <div class="cal-wrap">
+    <div class="cal-nav">
+      <button onclick="prevMonth()">←</button>
+      <span class="cal-nav-title" id="calTitle"></span>
+      <button onclick="nextMonth()">→</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <div class="leg2"><div class="leg2-dot" style="background:#f59e0b"></div>🔥超ベスト</div>
+      <div class="leg2"><div class="leg2-dot" style="background:#c084fc"></div>✨ベスト</div>
+      <div class="leg2"><div class="leg2-dot" style="background:#34d399"></div>👍良好</div>
+      <div class="leg2"><div class="leg2-dot" style="background:#ef4444"></div>🚫不成就日NG</div>
+    </div>
   </div>
 
   <!-- Settings + Period log -->
@@ -407,7 +459,7 @@ function overallScore(bio, num, moon) {
 }
 
 // ── Tips ──────────────────────────────────────────────
-function buildTips(bio, num, moon, pillar) {
+function buildTips(bio, num, moon, pillar, period) {
   const tips = [];
   const isCrit = v => Math.abs(v) < 0.15;
   const p = Math.round(bio.physical*100);
@@ -642,7 +694,7 @@ function render() {
   renderWeek(birth, today);
 
   // Tips
-  const tips = buildTips(bio, num, moon, pillar);
+  const tips = buildTips(bio, num, moon, pillar, period);
   document.getElementById('tips').innerHTML = tips.map(t =>
     `<div class="tip">
       <div class="tip-icon">${t.icon}</div>
@@ -652,6 +704,254 @@ function render() {
       </div>
     </div>`
   ).join('');
+}
+
+// ── Koyomi (暦注) ─────────────────────────────────────
+function getDayBranch(date) {
+  const ref = new Date(1900,0,1,12);
+  const days = Math.floor((date.getTime()-ref.getTime())/864e5);
+  return ((days+10)%60+60)%60%12;
+}
+function getDayGanzhi(date) {
+  const ref = new Date(1900,0,1,12);
+  const days = Math.floor((date.getTime()-ref.getTime())/864e5);
+  return ((days+10)%60+60)%60;
+}
+// 不成就日: 月 → 日支ペア
+function isFujouju(date) {
+  const m=date.getMonth()+1, b=getDayBranch(date);
+  const M={1:[0,6],2:[1,7],3:[2,8],4:[3,9],5:[4,10],6:[5,11],
+           7:[0,6],8:[1,7],9:[2,8],10:[3,9],11:[4,10],12:[5,11]};
+  return M[m].includes(b);
+}
+// 一粒万倍日: 節月 → 日支ペア
+function isIchiryuManbai(date) {
+  const m=date.getMonth()+1, d=date.getDate(), b=getDayBranch(date);
+  let sm;
+  if(m===1)sm=d<6?12:1; else if(m===2)sm=d<4?1:2;
+  else if(m===3)sm=d<6?2:3; else if(m===4)sm=d<5?3:4;
+  else if(m===5)sm=d<6?4:5; else if(m===6)sm=d<6?5:6;
+  else if(m===7)sm=d<7?6:7; else if(m===8)sm=d<8?7:8;
+  else if(m===9)sm=d<8?8:9; else if(m===10)sm=d<8?9:10;
+  else if(m===11)sm=d<7?10:11; else sm=d<7?11:12;
+  const M={1:[5,11],2:[0,6],3:[0,6],4:[1,7],5:[1,7],6:[2,8],
+           7:[2,8],8:[3,9],9:[3,9],10:[4,10],11:[4,10],12:[5,11]};
+  return M[sm].includes(b);
+}
+// 天赦日: 季節×干支 (春=戊寅14, 夏=甲午30, 秋=戊申44, 冬=甲子0)
+function isTenshaDay(date) {
+  const gz=getDayGanzhi(date), m=date.getMonth()+1, d=date.getDate();
+  let t;
+  if((m===2&&d>=4)||(m>2&&m<5)||(m===5&&d<6)) t=14;
+  else if((m===5&&d>=6)||(m>5&&m<8)||(m===8&&d<8)) t=30;
+  else if((m===8&&d>=8)||(m>8&&m<11)||(m===11&&d<7)) t=44;
+  else t=0;
+  return gz===t;
+}
+function isToraNoHi(date){ return getDayBranch(date)===2; }
+function isMiNoHi(date)  { return getDayBranch(date)===5; }
+// 三隣亡: 1・4・7・10月=亥(11), 2・5・8・11月=寅(2), 3・6・9・12月=午(6)
+function isSanrinbou(date) {
+  const m=date.getMonth()+1, b=getDayBranch(date);
+  return {1:11,2:2,3:6,4:11,5:2,6:6,7:11,8:2,9:6,10:11,11:2,12:6}[m]===b;
+}
+// 六曜: (旧暦月+旧暦日) mod 6 → 先勝友引先負仏滅大安赤口
+function getRokuyo(date) {
+  const SYN=29.53058867, MS=864e5;
+  const NM=new Date('2000-01-06T18:14:00Z').getTime();
+  const el=(date.getTime()-NM)/(SYN*MS);
+  const lunarDay=Math.floor((((el%1)+1)%1)*SYN)+1;
+  const CNY=new Date('2023-01-22T01:53:00Z').getTime();
+  const mf=(date.getTime()-CNY)/(SYN*MS);
+  const lm=((Math.floor(mf)%12)+12)%12+1;
+  const idx=(lm+lunarDay)%6;
+  const N=['先勝','友引','先負','仏滅','大安','赤口'];
+  return {name:N[idx],idx,isGood:idx===4||idx===1,isBad:idx===3||idx===5};
+}
+function calcKoyomi(date) {
+  return {
+    fujouju:      isFujouju(date),
+    ichiryuManbai:isIchiryuManbai(date),
+    tenshaDay:    isTenshaDay(date),
+    toraNoHi:    isToraNoHi(date),
+    miNoHi:      isMiNoHi(date),
+    sanrinbou:   isSanrinbou(date),
+    rokuyo:      getRokuyo(date),
+  };
+}
+
+// ── 総合デイスコア ─────────────────────────────────────
+let calYear, calMonth;
+
+function tagStyle(cls) {
+  const C={
+    'ng':    '#ef4444',
+    'gold':  '#f59e0b',
+    'green': '#34d399',
+    'blue':  '#60a5fa',
+  };
+  const c=C[cls]||'#64748b';
+  return `background:${c}22;color:${c};border:1px solid ${c}44`;
+}
+
+function calcDayScore(date, birth, periodDates) {
+  const bio  = bioRhythm(birth, date);
+  const num  = personalDay(birth, date);
+  const moon = moonPhase(date);
+  const ko   = calcKoyomi(date);
+  const pStr = getLastPeriod(periodDates);
+  const cyc  = calcAvgCycle(periodDates);
+  const pd   = pStr ? menstrualPhase(pStr, cyc, date) : null;
+
+  const tags=[], warns=[];
+  let score=50, isNG=false;
+
+  if(ko.fujouju) {
+    isNG=true;
+    tags.push({label:'🚫不成就日', sc:'ng'});
+  } else {
+    if(ko.tenshaDay)    { score+=30; tags.push({label:'✨天赦日', sc:'gold'}); }
+    if(ko.ichiryuManbai){ score+=15; tags.push({label:'🌱一粒万倍', sc:'gold'}); }
+    if(ko.toraNoHi)     { score+=8;  tags.push({label:'🐯寅の日', sc:'green'}); }
+    if(ko.miNoHi)       { score+=8;  tags.push({label:'🐍巳の日', sc:'green'}); }
+    if(ko.rokuyo.name==='大安')  { score+=10; tags.push({label:'大安', sc:'blue'}); }
+    else if(ko.rokuyo.name==='友引') score+=5;
+    else if(ko.rokuyo.name==='仏滅') { score-=20; warns.push('仏滅'); }
+    else if(ko.rokuyo.name==='赤口') { score-=10; warns.push('赤口'); }
+    if(ko.sanrinbou) { score-=15; warns.push('三隣亡'); }
+    // バイオリズム
+    score+=bio.emotional*20;
+    score+=bio.physical*10;
+    score+=bio.intellectual*8;
+    // 生理フェーズ
+    if(pd) {
+      if(pd.phase==='排卵期')             score+=20;
+      else if(pd.phase==='卵胞期')         score+=10;
+      else if(pd.phase==='黄体期（前半）') score+=5;
+      else if(pd.phase==='月経期')         score-=15;
+      else if(pd.phase==='黄体期（PMS期）')score-=10;
+    }
+    // 数秘
+    if([11,22,33].includes(num.day)) score+=12;
+    else if([1,3,8].includes(num.day)) score+=7;
+    // 月相
+    if(moon.phase<0.1||moon.phase>0.93) score+=8;
+  }
+
+  score=Math.round(Math.max(isNG?1:8, Math.min(100,score)));
+
+  let cat, emoji, color;
+  if(isNG)          { cat='ng';      emoji='🚫'; color='#ef4444'; }
+  else if(score>=80){ cat='super';   emoji='🔥'; color='#f59e0b'; }
+  else if(score>=65){ cat='best';    emoji='✨'; color='#c084fc'; }
+  else if(score>=50){ cat='good';    emoji='👍'; color='#34d399'; }
+  else if(score>=35){ cat='normal';  emoji='😐'; color='#60a5fa'; }
+  else              { cat='caution'; emoji='⚠️'; color='#94a3b8'; }
+
+  const acts=[];
+  if(!isNG&&score>=60) {
+    if(pd&&pd.phase==='排卵期'&&bio.emotional>0.1) acts.push('💬セールス');
+    if(ko.ichiryuManbai||ko.tenshaDay) acts.push('🚀新規スタート');
+    if(bio.emotional>0.35) acts.push('📣発信');
+    if(bio.intellectual>0.35) acts.push('✍️創作');
+    if(ko.toraNoHi||ko.miNoHi) acts.push('💰お金の話');
+  }
+
+  return {score, cat, emoji, color, tags, warns, isNG, acts, ko, pd};
+}
+
+// ── 月間カレンダー ─────────────────────────────────────
+function renderCalendar(year, month) {
+  calYear=year; calMonth=month;
+  document.getElementById('calTitle').textContent=`${year}年${month}月`;
+
+  const birth=new Date(document.getElementById('birthDate').value+'T12:00:00');
+  const pDates=loadPeriods();
+  const today=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const todayStr=`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  const DOW=['日','月','火','水','木','金','土'];
+  let html=DOW.map((d,i)=>
+    `<div class="cal-hdr" style="${i===0?'color:#f87171':i===6?'color:#60a5fa':''}">${d}</div>`
+  ).join('');
+
+  const first=new Date(year,month-1,1);
+  for(let i=0;i<first.getDay();i++) html+='<div class="cal-cell cal-empty"></div>';
+
+  const last=new Date(year,month,0).getDate();
+  for(let d=1;d<=last;d++) {
+    const date=new Date(year,month-1,d,12);
+    const ds=calcDayScore(date, birth, pDates);
+    const dStr=`${year}-${pad(month)}-${pad(d)}`;
+    const isToday=dStr===todayStr;
+    const rkColor=ds.ko.rokuyo.isGood?'color:#f59e0b':ds.ko.rokuyo.isBad?'color:#ef4444':'color:var(--muted)';
+    const tagsHtml=ds.tags.slice(0,2).map(t=>
+      `<span class="cal-tag" style="${tagStyle(t.sc)}">${t.label}</span>`
+    ).join('');
+    html+=`<div class="cal-cell cat-${ds.cat}${isToday?' cal-today':''}" onclick="jumpToDate('${dStr}')">
+      <div class="cal-day-num">${ds.emoji}${d}</div>
+      <div class="cal-rokuyo" style="${rkColor}">${ds.ko.rokuyo.name}</div>
+      <div class="cal-score" style="color:${ds.color}">${ds.isNG?'NG':ds.score+'点'}</div>
+      <div class="cal-tags">${tagsHtml}</div>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  renderBestDays(year, month, birth, pDates);
+}
+
+function renderBestDays(year, month, birth, pDates) {
+  const last=new Date(year,month,0).getDate();
+  const pad=n=>String(n).padStart(2,'0');
+  const all=[];
+  for(let d=1;d<=last;d++) {
+    const date=new Date(year,month-1,d,12);
+    all.push({d, ds:calcDayScore(date,birth,pDates)});
+  }
+  const top=all.filter(x=>!x.ds.isNG).sort((a,b)=>b.ds.score-a.ds.score).slice(0,5);
+  const special=all.filter(x=>!x.ds.isNG&&(x.ds.ko.tenshaDay||x.ds.ko.ichiryuManbai));
+  const ngDays=all.filter(x=>x.ds.isNG);
+
+  const chip=(x,col,label)=>
+    `<span class="bestday-chip" style="background:${col}22;border-color:${col}55;color:${col}"
+      onclick="jumpToDate('${year}-${pad(month)}-${pad(x.d)}')">${label}</span>`;
+
+  let html=`<div class="bestday-section">
+    <div class="bestday-label">💬 セールス・発信に動くなら（スコア高い順）</div>
+    <div class="bestday-chips">${top.map(x=>chip(x,x.ds.color,`${month}/${x.d} ${x.ds.emoji}${x.ds.score}点`)).join('')}</div>
+  </div>`;
+
+  if(special.length) {
+    html+=`<div class="bestday-section">
+      <div class="bestday-label">🌟 開運日（天赦日・一粒万倍日）</div>
+      <div class="bestday-chips">${special.map(x=>{
+        const ls=[];
+        if(x.ds.ko.tenshaDay) ls.push('天赦日');
+        if(x.ds.ko.ichiryuManbai) ls.push('一粒万倍');
+        return chip(x,'#f59e0b',`${month}/${x.d} ${ls.join('+')}`);
+      }).join('')}</div>
+    </div>`;
+  }
+
+  if(ngDays.length) {
+    html+=`<div class="bestday-section">
+      <div class="bestday-label" style="color:#ef4444">🚫 不成就日（全吉日打ち消し・動かない日）</div>
+      <div style="color:#ef4444;font-size:0.82rem;font-weight:600;letter-spacing:0.05em">
+        ${ngDays.map(x=>`${month}/${x.d}`).join('　')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('bestdays').innerHTML=html;
+}
+
+function prevMonth() {
+  if(calMonth===1){calYear--;calMonth=12;}else calMonth--;
+  renderCalendar(calYear,calMonth);
+}
+function nextMonth() {
+  if(calMonth===12){calYear++;calMonth=1;}else calMonth++;
+  renderCalendar(calYear,calMonth);
 }
 
 // ── Period log (localStorage) ─────────────────────────
@@ -903,7 +1203,12 @@ function jumpToDate(dateStr) {
 
   renderPeriodHistory();
 
+  const t = new Date();
+  calYear = t.getFullYear();
+  calMonth = t.getMonth() + 1;
+
   render();
+  renderCalendar(calYear, calMonth);
   window.addEventListener('resize', () => {
     const tVal = document.getElementById('targetDate').value;
     const bVal = document.getElementById('birthDate').value;
