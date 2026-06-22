@@ -182,6 +182,9 @@ canvas { display: block; width: 100%; }
 .period-row-cycle { color: var(--muted); font-size: 0.75rem; flex: 1; }
 .cycle-short { color: #fbbf24; }
 .cycle-long  { color: #60a5fa; }
+.period-moon { font-size: 0.72rem; flex-shrink: 0; }
+.moon-new  { color: #60a5fa; font-weight: 700; }
+.moon-full { color: #fbbf24; font-weight: 700; }
 .period-avg {
   text-align: center; padding: 10px;
   font-size: 0.78rem; color: var(--muted);
@@ -716,9 +719,24 @@ function renderPeriodHistory() {
     }
     const dateObj = new Date(d+'T12:00:00');
     const label = `${dateObj.getFullYear()}/${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+    const moonOnStart = moonPhase(new Date(d + 'T12:00:00'));
+    const moonAge = moonOnStart.age;
+    // Classify: new moon ±3 days (age 0-3 or 27-29.5), full moon ±3 days (age 11-17)
+    let moonLabel, moonCls;
+    if (moonAge <= 3 || moonAge >= 26.5) {
+      moonLabel = '🌑新月'; moonCls = 'moon-new';
+    } else if (moonAge >= 11 && moonAge <= 17) {
+      moonLabel = '🌕満月'; moonCls = 'moon-full';
+    } else if (moonAge < 11) {
+      moonLabel = '🌒上弦前'; moonCls = '';
+    } else if (moonAge < 26.5) {
+      moonLabel = '🌘下弦後'; moonCls = '';
+    }
+
     html += `<div class="period-row">
       <span class="period-row-date">🔴 ${label}</span>
       <span class="period-row-cycle">${cycleHtml}</span>
+      <span class="period-moon ${moonCls}">${moonLabel}</span>
       <button class="btn btn-del" onclick="deletePeriod('${d}')">削除</button>
     </div>`;
   }
