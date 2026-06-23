@@ -459,7 +459,7 @@ function overallScore(bio, num, moon) {
 }
 
 // ── Tips ──────────────────────────────────────────────
-function buildTips(bio, num, moon, pillar, period) {
+function buildTips(bio, num, moon, pillar, period, ky) {
   const tips = [];
   const isCrit = v => Math.abs(v) < 0.15;
   const p = Math.round(bio.physical*100);
@@ -489,6 +489,7 @@ function buildTips(bio, num, moon, pillar, period) {
   if (nm) tips.push({icon:nm.icon, text:`パーソナルデイ【${num.day}】${nm.name}。${nm.tip}`, src:'数秘術'});
 
   tips.push({icon:moon.icon, text:`月は${moon.name}（月齢${moon.age.toFixed(1)}日）。${moon.energy}。`, src:'西洋占星術（月相）'});
+  if(ky) tips.push({icon:'🌟', text:`九星気学・日盤：${KYUSEI_ICONS[ky.dc]}${KYUSEI_NAMES[ky.dc]}が中心。一白水星は${PALACE_NAMES[ky.dp]}に入っています。${PALACE_ENERGY[ky.dp]}。`, src:'九星気学（日盤）'});
   tips.push({icon:'☯️', text:`今日の日柱は【${pillar.pillar}】。${pillar.sElem}${pillar.polar}のエネルギー。${pillar.tip}`, src:'四柱推命（日柱）'});
 
   // Period tip
@@ -606,6 +607,7 @@ function render() {
   const num    = personalDay(birth, target);
   const moon   = moonPhase(target);
   const pillar = dayPillar(target);
+  const ky     = calcKyusei(target);
   const ovr    = overallScore(bio, num, moon);
   const periodDates = loadPeriods();
   const periodStartStr = getLastPeriod(periodDates);
@@ -680,6 +682,34 @@ function render() {
       <div class="card-sub">${pillar.sElem}${pillar.polar} × ${pillar.bElem}</div>
       <div class="card-sub" style="margin-top:6px;font-size:.72rem">${pillar.tip}</div>
     </div>
+    <div class="card" style="border-color:#60a5fa44">
+      <div class="card-icon">🌟</div>
+      <div class="card-label">九星気学</div>
+      <div class="card-value" style="font-size:1rem">${KYUSEI_ICONS[HONMEISEI]} ${KYUSEI_NAMES[HONMEISEI]}</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:0.75rem">
+        <div>
+          <span style="color:var(--muted)">今年</span>
+          <span style="color:#f59e0b;font-weight:600;margin:0 4px">${KYUSEI_ICONS[ky.yc]}${KYUSEI_NAMES[ky.yc]}</span>
+          <span style="color:#94a3b8">→</span>
+          <span style="color:${ky.yp===5?'#ef4444':ky.yp>=3&&ky.yp!==5?'#34d399':'#60a5fa'};font-weight:700;margin-left:4px">${PALACE_NAMES[ky.yp]}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);padding-left:4px">${PALACE_ENERGY[ky.yp]}</div>
+        <div style="border-top:1px solid var(--border);padding-top:6px">
+          <span style="color:var(--muted)">今月</span>
+          <span style="color:#c084fc;font-weight:600;margin:0 4px">${KYUSEI_ICONS[ky.mc]}${KYUSEI_NAMES[ky.mc]}</span>
+          <span style="color:#94a3b8">→</span>
+          <span style="color:${ky.mp===5?'#ef4444':PALACE_SCORE[ky.mp]>=8?'#34d399':'#60a5fa'};font-weight:700;margin-left:4px">${PALACE_NAMES[ky.mp]}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);padding-left:4px">${PALACE_ENERGY[ky.mp]}</div>
+        <div style="border-top:1px solid var(--border);padding-top:6px">
+          <span style="color:var(--muted)">今日</span>
+          <span style="color:#34d399;font-weight:600;margin:0 4px">${KYUSEI_ICONS[ky.dc]}${KYUSEI_NAMES[ky.dc]}</span>
+          <span style="color:#94a3b8">→</span>
+          <span style="color:${ky.dp===5?'#ef4444':PALACE_SCORE[ky.dp]>=8?'#f59e0b':'#60a5fa'};font-weight:700;margin-left:4px">${PALACE_NAMES[ky.dp]}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);padding-left:4px">${PALACE_ENERGY[ky.dp]}</div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-icon">📊</div>
       <div class="card-label">バイオリズム 平均</div>
@@ -694,7 +724,7 @@ function render() {
   renderWeek(birth, today);
 
   // Tips
-  const tips = buildTips(bio, num, moon, pillar, period);
+  const tips = buildTips(bio, num, moon, pillar, period, ky);
   document.getElementById('tips').innerHTML = tips.map(t =>
     `<div class="tip">
       <div class="tip-icon">${t.icon}</div>
@@ -780,6 +810,93 @@ function calcKoyomi(date) {
   };
 }
 
+// ── 九星気学 ──────────────────────────────────────────
+const HONMEISEI = 1; // 一白水星（ややさん）
+
+const KYUSEI_NAMES = ['','一白水星','二黒土星','三碧木星','四緑木星','五黄土星',
+                      '六白金星','七赤金星','八白土星','九紫火星'];
+const KYUSEI_ICONS = ['','💧','🌍','⚡','🌿','🌀','🌟','✨','🏔','🔥'];
+
+// 年の中心星（節分=2/4基準）
+function kyuseiYearStar(date) {
+  let y = date.getFullYear();
+  const m = date.getMonth()+1, d = date.getDate();
+  if(m===1||(m===2&&d<4)) y--;
+  const n = ((1-(y-2026)%9+900)%9);
+  return n===0?9:n;
+}
+
+// 節月インデックス (0=寅月 〜 11=丑月)
+function getSetsuIdx(date) {
+  const m=date.getMonth()+1, d=date.getDate();
+  if((m===2&&d>=4)||(m===3&&d<6))  return 0;
+  if((m===3&&d>=6)||(m===4&&d<5))  return 1;
+  if((m===4&&d>=5)||(m===5&&d<6))  return 2;
+  if((m===5&&d>=6)||(m===6&&d<6))  return 3;
+  if((m===6&&d>=6)||(m===7&&d<7))  return 4;
+  if((m===7&&d>=7)||(m===8&&d<8))  return 5;
+  if((m===8&&d>=8)||(m===9&&d<8))  return 6;
+  if((m===9&&d>=8)||(m===10&&d<8)) return 7;
+  if((m===10&&d>=8)||(m===11&&d<7))return 8;
+  if((m===11&&d>=7)||(m===12&&d<7))return 9;
+  if((m===12&&d>=7)||(m===1&&d<6)) return 10;
+  return 11; // 丑月
+}
+
+// 月の中心星（寅月=start, 以降毎月-1）
+function kyuseiMonthStar(date) {
+  const yc = kyuseiYearStar(date);
+  const start = [8,5,2,8,5,2,8,5,2][yc-1];
+  const idx = getSetsuIdx(date);
+  const n = ((start-idx+900)%9);
+  return n===0?9:n;
+}
+
+// 節月の開始日 [month-1, day]（0=Jan）
+const SETSU_STARTS = [[1,4],[2,6],[3,5],[4,6],[5,6],[6,7],[7,8],[8,8],[9,8],[10,7],[11,7],[0,6]];
+
+// 日の中心星
+function kyuseiDayStar(date) {
+  const mc = kyuseiMonthStar(date);
+  const idx = getSetsuIdx(date);
+  const [sm, sd] = SETSU_STARTS[idx];
+  const startDate = new Date(date.getFullYear(), sm, sd, 12);
+  const daysSince = Math.max(0, Math.floor((date.getTime()-startDate.getTime())/864e5));
+  const n = ((mc-daysSince%9+900)%9);
+  return n===0?9:n;
+}
+
+// 宮の位置: palace(N, centerStar)
+function palaceOf(star, center) {
+  return ((star+4-center+900)%9)+1;
+}
+
+const PALACE_NAMES = ['','坎宮(北)','坤宮(西南)','震宮(東)','巽宮(東南)',
+                      '中宮','乾宮(西北)','兌宮(西)','艮宮(東北)','離宮(南)'];
+const PALACE_ENERGY = ['',
+  '内省・充電。潜在能力を育む時期',
+  '地道・辛抱。努力が土台になる',
+  '行動・発展。新しいスタートに吉',
+  '縁・信用・コミュ力が上がる',
+  '大変化・転換点。中宮回座。',
+  '権威・リーダー・責任感が増す',
+  '収穫・喜び・金運が高まる',
+  '変化・蓄積。転機のタイミング',
+  '表現・認知・発信力が上がる',
+];
+const PALACE_SCORE = [0, 2, 3, 10, 12, 0, 7, 8, 5, 10];
+
+function calcKyusei(date) {
+  const yc = kyuseiYearStar(date);
+  const mc = kyuseiMonthStar(date);
+  const dc = kyuseiDayStar(date);
+  const yp = palaceOf(HONMEISEI, yc);
+  const mp = palaceOf(HONMEISEI, mc);
+  const dp = palaceOf(HONMEISEI, dc);
+  return { yc, mc, dc, yp, mp, dp,
+    dayBonus: PALACE_SCORE[dp] };
+}
+
 // ── 総合デイスコア ─────────────────────────────────────
 let calYear, calMonth;
 
@@ -804,6 +921,7 @@ function calcDayScore(date, birth, periodDates) {
   const pd   = pStr ? menstrualPhase(pStr, cyc, date) : null;
 
   const tags=[], warns=[];
+  const ky = calcKyusei(date);
   let score=50, isNG=false;
 
   if(ko.fujouju) {
@@ -836,6 +954,8 @@ function calcDayScore(date, birth, periodDates) {
     else if([1,3,8].includes(num.day)) score+=7;
     // 月相
     if(moon.phase<0.1||moon.phase>0.93) score+=8;
+    // 九星気学 日盤
+    score += Math.round(ky.dayBonus * 0.4);
   }
 
   score=Math.round(Math.max(isNG?1:8, Math.min(100,score)));
