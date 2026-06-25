@@ -341,7 +341,7 @@ canvas { display: block; width: 100%; }
         <input type="date" id="birthDate">
       </div>
     </div>
-    <div class="period-log">
+    <div class="period-log" id="periodSection" style="display:none">
       <div class="period-log-title">
         <span>🔴 生理記録</span>
         <span id="periodAvgBadge" style="color:var(--text)"></span>
@@ -1907,8 +1907,14 @@ function jumpToDate(dateStr) {
   const pad = n => String(n).padStart(2,'0');
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
-  // URLパラメータ ?b=YYYYMMDD から生年月日を読む
+  // URLパラメータ解析
   const params = new URLSearchParams(window.location.search);
+
+  // ?yaya=1 の時だけ生理記録を表示
+  const isYaya = params.get('yaya') === '1';
+  if (isYaya) {
+    document.getElementById('periodSection').style.display = '';
+  }
   const bParam = params.get('b');
   let birthVal = '';
   if (bParam && /^\d{8}$/.test(bParam)) {
