@@ -274,7 +274,9 @@ canvas { display: block; width: 100%; }
   </div>
 
   <div class="date-row">
-    <label>チェックする日</label>
+    <label>生年月日</label>
+    <input type="date" id="birthDate">
+    <label style="margin-left:12px">チェックする日</label>
     <input type="date" id="targetDate">
   </div>
 
@@ -337,12 +339,6 @@ canvas { display: block; width: 100%; }
 
   <!-- Settings + Period log -->
   <div class="settings-wrap">
-    <div class="settings-top">
-      <div class="s-item">
-        <span class="s-label">生年月日</span>
-        <input type="date" id="birthDate">
-      </div>
-    </div>
     <div class="period-log" id="periodSection" style="display:none">
       <div class="period-log-title">
         <span>🔴 生理記録</span>
