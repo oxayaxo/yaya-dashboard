@@ -773,7 +773,8 @@ function render() {
 
   // Cards
   const nm = numInfo[num.day] || {name:'−', icon:'?'};
-  const periodCardHtml = period ? `
+  const isYayaMode = new URLSearchParams(window.location.search).get('yaya') === '1';
+  const periodCardHtml = (period && isYayaMode) ? `
     <div class="card" style="border-color:${period.phaseColor}33">
       <div class="card-icon">${period.phaseIcon}</div>
       <div class="card-label">生理周期フェーズ</div>
