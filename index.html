@@ -578,7 +578,7 @@ function buildSummary(bio, num, moon, period, ky, koyomi, ovr) {
   return { headline, subline, headColor, chips:[bodyChip,heartChip,actChip,openChip], doList:uniq(doList), dontList:uniq(dontList) };
 }
 
-function buildTips(bio, num, moon, pillar, period, ky) {
+function buildTips(bio, num, moon, pillar, period, ky, isYayaMode) {
   const tips = [];
   const isCrit = v => Math.abs(v) < 0.15;
   const p = Math.round(bio.physical*100);
@@ -859,7 +859,7 @@ function render() {
   // Tips
   const koyomi = calcKoyomi(target);
   const summary = buildSummary(bio, num, moon, period, ky, koyomi, ovr);
-  const tips = buildTips(bio, num, moon, pillar, period, ky);
+  const tips = buildTips(bio, num, moon, pillar, period, ky, isYayaMode);
   const chipsHtml = summary.chips.map(c =>
     `<div class="tip-chip ${c.cls}">
       <span class="tip-chip-label">${c.label}</span>
