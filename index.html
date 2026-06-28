@@ -820,10 +820,17 @@ function render() {
   const kihouHtml = ky.kihou.length
     ? ky.kihou.map(d => '<span style="background:rgba(52,211,153,.15);color:#34d399;border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:700">' + d + '</span>').join('')
     : '<span style="font-size:0.78rem;color:var(--muted)">本日は吉方位なし</span>';
-  const kyoHtml = ky.kyo.map(k =>
-    '<div style="font-size:0.78rem"><span style="color:#ef4444;font-weight:700">' + k.dir + '</span>'
-    + '<span style="color:var(--muted);font-size:0.7rem;margin-left:6px">' + k.label + '</span></div>'
-  ).join('');
+  const bandColor = {'年':'#f59e0b','月':'#c084fc','日':'#60a5fa'};
+  const kyoHtml = ky.kyo.map(k => {
+    const bm = k.label.match(/（(年|月|日)）/);
+    const bc = bm ? (bandColor[bm[1]]||'#94a3b8') : '#94a3b8';
+    const reason = k.label.replace(/（.）/,'');
+    const band = bm ? '<span style="background:'+bc+'22;color:'+bc+';border-radius:4px;padding:1px 5px;font-size:0.62rem;font-weight:700;margin-left:4px">'+bm[1]+'盤</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">'
+      + '<span style="color:#ef4444;font-weight:700;font-size:0.82rem;min-width:2.2em">' + k.dir + '</span>'
+      + '<span style="color:var(--muted);font-size:0.72rem">' + reason + '</span>'
+      + band + '</div>';
+  }).join('');
 
   document.getElementById('cards').innerHTML = `
     ${periodCardHtml}
@@ -880,7 +887,7 @@ function render() {
     <div class="card" style="border-color:#34d39944;grid-column:1/-1">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
         <span style="font-size:1.2rem">🧭</span>
-        <span style="font-size:0.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">今日の吉方位（日盤）</span>
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">今日の吉方位（三盤一致）</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="background:var(--surface);border-radius:10px;padding:10px">
