@@ -853,6 +853,27 @@ function render() {
         <div style="font-size:0.68rem;color:var(--muted);padding-left:4px">${PALACE_ENERGY[ky.dp]}</div>
       </div>
     </div>
+    <div class="card" style="border-color:#34d39944;grid-column:1/-1">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="font-size:1.2rem">🧭</span>
+        <span style="font-size:0.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">今日の吉方位（日盤）</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:var(--surface);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;font-weight:700;color:#34d399;letter-spacing:.05em;margin-bottom:8px">✅ 吉方位</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${ky.kihou.length ? ky.kihou.map(d=>`<span style="background:rgba(52,211,153,.15);color:#34d399;border-radius:6px;padding:3px 10px;font-size:0.82rem;font-weight:700">${d}</span>`).join('') : '<span style="font-size:0.78rem;color:var(--muted)">本日は吉方位なし</span>'}
+          </div>
+        </div>
+        <div style="background:var(--surface);border-radius:10px;padding:10px">
+          <div style="font-size:0.65rem;font-weight:700;color:#ef4444;letter-spacing:.05em;margin-bottom:8px">⛔ 避ける方角</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${ky.kyo.map(k=>`<div style="font-size:0.78rem"><span style="color:#ef4444;font-weight:700">${k.dir}</span><span style="color:var(--muted);font-size:0.7rem;margin-left:6px">${k.label}</span></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.6">外出・引越・旅行の方角選びに。吉方位に向かって出かけると運気アップ、凶方位は今日だけ避けて。</div>
+    </div>
     <div class="card sabian-wide" style="border-color:#c084fc44;grid-column:1/-1">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">
         <span style="font-size:1.3rem">🔮</span>
@@ -1481,8 +1502,9 @@ function palaceOf(star, center) {
   return ((star+4-center+900)%9)+1;
 }
 
-const PALACE_NAMES = ['','坎宮(北)','坤宮(西南)','震宮(東)','巽宮(東南)',
-                      '中宮','乾宮(西北)','兌宮(西)','艮宮(東北)','離宮(南)'];
+const PALACE_NAMES = ['','坎宮','坤宮','震宮','巽宮','中宮','乾宮','兌宮','艮宮','離宮'];
+const PALACE_DIR  = ['','北','西南','東','東南','中央','西北','西','東北','南'];
+const PALACE_OPP  = [0,9,8,7,6,0,4,3,2,1]; // 反対の宮
 const PALACE_ENERGY = ['',
   '静かに育ってる時期。見えない力が貯まってる。焦らなくていい',
   'コツコツが報われる時期。地味に見えることが、一番大事なことだったりする',
@@ -1503,8 +1525,27 @@ function calcKyusei(date) {
   const yp = palaceOf(HONMEISEI, yc);
   const mp = palaceOf(HONMEISEI, mc);
   const dp = palaceOf(HONMEISEI, dc);
+
+  // 吉方位計算（日盤ベース）
+  const gokoPalace      = palaceOf(5, dc);           // 五黄殺の宮
+  const ankenPalace     = PALACE_OPP[gokoPalace];    // 暗剣殺（五黄の反対）
+  const honmeiSatsu     = dp;                        // 本命殺（自分の星の宮）
+  const honmeiTekiSatsu = PALACE_OPP[dp];            // 本命的殺（その反対）
+  const kyoPalaces = new Set([gokoPalace, ankenPalace, honmeiSatsu, honmeiTekiSatsu, 5]);
+  const kihouPalaces = [1,2,3,4,6,7,8,9].filter(p => !kyoPalaces.has(p));
+
+  const kyoList = [];
+  if (gokoPalace !== 5) kyoList.push({ label:'五黄殺', dir: PALACE_DIR[gokoPalace] });
+  if (ankenPalace && ankenPalace !== 5) kyoList.push({ label:'暗剣殺', dir: PALACE_DIR[ankenPalace] });
+  if (honmeiSatsu !== 5 && honmeiSatsu !== gokoPalace && honmeiSatsu !== ankenPalace)
+    kyoList.push({ label:'本命殺', dir: PALACE_DIR[honmeiSatsu] });
+  if (honmeiTekiSatsu && honmeiTekiSatsu !== 5 && !kyoList.find(k=>k.dir===PALACE_DIR[honmeiTekiSatsu]))
+    kyoList.push({ label:'本命的殺', dir: PALACE_DIR[honmeiTekiSatsu] });
+
   return { yc, mc, dc, yp, mp, dp,
-    dayBonus: PALACE_SCORE[dp] };
+    dayBonus: PALACE_SCORE[dp],
+    kihou: kihouPalaces.map(p => PALACE_DIR[p]),
+    kyo: kyoList };
 }
 
 // ── 総合デイスコア ─────────────────────────────────────
