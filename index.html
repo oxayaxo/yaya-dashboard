@@ -43,6 +43,19 @@ input[type="date"] {
   color: var(--text); padding: 7px 14px; border-radius: 10px;
   font-size: 0.95rem; cursor: pointer; outline: none;
 }
+.split-date {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 6px 10px;
+}
+.split-date input[type="number"] {
+  background: transparent; border: none; color: var(--text);
+  font-size: 0.95rem; outline: none; padding: 0; text-align: center;
+  -moz-appearance: textfield;
+}
+.split-date input[type="number"]::-webkit-inner-spin-button,
+.split-date input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.split-sep { font-size: 0.85rem; color: var(--muted); }
 input[type="date"]:focus { border-color: var(--accent); }
 
 /* Overall */
@@ -275,7 +288,15 @@ canvas { display: block; width: 100%; }
 
   <div class="date-row">
     <label>生年月日</label>
-    <input type="date" id="birthDate">
+    <input type="hidden" id="birthDate">
+    <span class="split-date" id="birthSplit">
+      <input type="number" id="birthY" placeholder="1990" min="1900" max="2099" maxlength="4" style="width:4.2em" inputmode="numeric">
+      <span class="split-sep">年</span>
+      <input type="number" id="birthM" placeholder="1" min="1" max="12" maxlength="2" style="width:2.4em" inputmode="numeric">
+      <span class="split-sep">月</span>
+      <input type="number" id="birthD" placeholder="1" min="1" max="31" maxlength="2" style="width:2.4em" inputmode="numeric">
+      <span class="split-sep">日</span>
+    </span>
     <label style="margin-left:12px">チェックする日</label>
     <input type="date" id="targetDate">
   </div>
@@ -1922,8 +1943,53 @@ function jumpToDate(dateStr) {
   }
 
   document.getElementById('targetDate').value  = todayStr;
-  document.getElementById('birthDate').value   = birthVal;
   document.getElementById('periodAddDate').value = todayStr;
+
+  // 分割入力から birthDate hidden value を組み立てる
+  function assembleBirth() {
+    const y = document.getElementById('birthY').value.padStart(4,'0');
+    const m = document.getElementById('birthM').value.padStart(2,'0');
+    const d = document.getElementById('birthD').value.padStart(2,'0');
+    if (y.length===4 && m && d) {
+      const v = `${y}-${m}-${d}`;
+      document.getElementById('birthDate').value = v;
+      localStorage.setItem('dashBirth', v);
+      return v;
+    }
+    return '';
+  }
+
+  // 既存の birthVal を分割入力に反映
+  function setBirthSplit(val) {
+    if (!val) return;
+    const parts = val.split('-');
+    if (parts.length === 3) {
+      document.getElementById('birthY').value = parseInt(parts[0], 10);
+      document.getElementById('birthM').value = parseInt(parts[1], 10);
+      document.getElementById('birthD').value = parseInt(parts[2], 10);
+      document.getElementById('birthDate').value = val;
+    }
+  }
+  setBirthSplit(birthVal);
+
+  // 年4桁→月へ、月2桁→日へ自動移動
+  document.getElementById('birthY').addEventListener('input', function() {
+    if (this.value.length >= 4) {
+      document.getElementById('birthM').focus();
+      assembleBirth();
+      render(); renderCalendar(calYear, calMonth);
+    }
+  });
+  document.getElementById('birthM').addEventListener('input', function() {
+    if (this.value.length >= 2) {
+      document.getElementById('birthD').focus();
+    }
+    assembleBirth();
+    render(); renderCalendar(calYear, calMonth);
+  });
+  document.getElementById('birthD').addEventListener('input', function() {
+    if (assembleBirth()) { render(); renderCalendar(calYear, calMonth); }
+  });
 
   // 生年月日が未設定なら入力を促すバナーを表示
   if (!birthVal) {
@@ -1933,31 +1999,41 @@ function jumpToDate(dateStr) {
     banner.innerHTML = `
       <div style="font-size:1.1rem;font-weight:700;margin-bottom:12px">🎁 あなた専用のダッシュボードを設定しましょう</div>
       <div style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">生年月日を入力すると、バイオリズム・九星気学・数秘術が自動計算されます</div>
-      <div style="display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;">
-        <input type="date" id="bannerBirth" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.95rem;">
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;">
+        <span class="split-date">
+          <input type="number" id="bannerY" placeholder="1990" min="1900" max="2099" style="width:4.2em;background:transparent;border:none;color:var(--text);font-size:0.95rem;outline:none;text-align:center;-moz-appearance:textfield;" inputmode="numeric">
+          <span class="split-sep">年</span>
+          <input type="number" id="bannerM" placeholder="1" min="1" max="12" style="width:2.4em;background:transparent;border:none;color:var(--text);font-size:0.95rem;outline:none;text-align:center;-moz-appearance:textfield;" inputmode="numeric">
+          <span class="split-sep">月</span>
+          <input type="number" id="bannerD" placeholder="1" min="1" max="31" style="width:2.4em;background:transparent;border:none;color:var(--text);font-size:0.95rem;outline:none;text-align:center;-moz-appearance:textfield;" inputmode="numeric">
+          <span class="split-sep">日</span>
+        </span>
         <button onclick="
-          const v = document.getElementById('bannerBirth').value;
-          if(!v){return;}
-          localStorage.setItem('dashBirth', v);
-          document.getElementById('birthDate').value = v;
+          const y=document.getElementById('bannerY').value.padStart(4,'0');
+          const m=document.getElementById('bannerM').value.padStart(2,'0');
+          const d=document.getElementById('bannerD').value.padStart(2,'0');
+          if(!y||!m||!d){return;}
+          const v=y+'-'+m+'-'+d;
+          localStorage.setItem('dashBirth',v);
+          document.getElementById('birthDate').value=v;
+          setBirthSplit(v);
           document.getElementById('birthBanner').remove();
-          render();
-          renderCalendar(calYear, calMonth);
+          render(); renderCalendar(calYear,calMonth);
         " style="padding:8px 20px;border-radius:8px;background:var(--accent);color:#000;font-weight:700;border:none;cursor:pointer;font-size:0.95rem;">設定する</button>
       </div>
     `;
     document.body.prepend(banner);
+    // バナーでも年4桁→月へ自動移動
+    setTimeout(() => {
+      const by = document.getElementById('bannerY');
+      const bm = document.getElementById('bannerM');
+      const bd = document.getElementById('bannerD');
+      if (by) by.addEventListener('input', function(){ if(this.value.length>=4) bm.focus(); });
+      if (bm) bm.addEventListener('input', function(){ if(this.value.length>=2) bd.focus(); });
+    }, 0);
   }
 
-  ['targetDate','birthDate'].forEach(id =>
-    document.getElementById(id).addEventListener('change', () => {
-      if (id === 'birthDate') {
-        const v = document.getElementById('birthDate').value;
-        if (v) localStorage.setItem('dashBirth', v);
-      }
-      render();
-    })
-  );
+  document.getElementById('targetDate').addEventListener('change', () => { render(); });
 
   renderPeriodHistory();
 
