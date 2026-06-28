@@ -301,12 +301,22 @@ canvas { display: block; width: 100%; }
     <input type="date" id="targetDate">
   </div>
 
-  <!-- Overall -->
+  <!-- Tips（最上部） -->
+  <div class="section-title" style="margin-bottom:14px">💫 今日のTips</div>
+  <div class="tips-wrap">
+    <div id="tips"></div>
+  </div>
+
+  <!-- Overall + Week（融合） -->
+  <div class="section-title" style="margin-bottom:14px">📊 今日の流れ・直近7日</div>
   <div class="overall">
     <div class="overall-emoji" id="overallEmoji"></div>
     <div class="overall-score" id="overallScore"></div>
     <div class="overall-label">総合エネルギースコア</div>
     <div class="overall-desc" id="overallDesc"></div>
+  </div>
+  <div class="week-wrap" style="margin-top:12px">
+    <div class="week-grid" id="weekGrid"></div>
   </div>
 
   <!-- Biorhythm -->
@@ -324,18 +334,6 @@ canvas { display: block; width: 100%; }
   <!-- Cards -->
   <div class="section-title" style="margin-bottom:14px">✦ 各軸の詳細</div>
   <div class="cards" id="cards"></div>
-
-  <!-- Tips -->
-  <div class="section-title" style="margin-bottom:14px">💫 今日のTips</div>
-  <div class="tips-wrap">
-    <div id="tips"></div>
-  </div>
-
-  <!-- Week view -->
-  <div class="section-title" style="margin-bottom:14px">📅 直近7日間の推移</div>
-  <div class="week-wrap">
-    <div class="week-grid" id="weekGrid"></div>
-  </div>
 
   <!-- Best days -->
   <div class="section-title" style="margin-bottom:14px">🔥 今月のベスト日</div>
@@ -522,8 +520,8 @@ function buildSummary(bio, num, moon, period, ky, koyomi, ovr, isYayaMode) {
     subline='見えないところで育ってる時期。「何もない」じゃなくて、次の開花の準備中。';
     headColor='#34d399';
   } else {
-    headline='☁️ 丁寧にいく日';
-    subline='大きな波はない——だからこそ、見落としてたことに気づける日。小さいことを大事にして。';
+    headline='';
+    subline='';
     headColor='var(--muted)';
   }
 
