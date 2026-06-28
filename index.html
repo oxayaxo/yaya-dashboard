@@ -333,6 +333,9 @@ canvas { display: block; width: 100%; }
   <div class="section-title" style="margin-bottom:14px">🔥 今月のベスト日</div>
   <div class="bestdays-wrap" id="bestdays"></div>
 
+  <!-- 吉方位 -->
+  <div id="kihouCard"></div>
+
   <!-- Monthly calendar -->
   <div class="section-title" style="margin-bottom:14px">📅 月間カレンダー（開運×体の波）</div>
   <div class="cal-wrap">
@@ -876,27 +879,6 @@ function render() {
         <div style="font-size:0.68rem;color:var(--muted);padding-left:4px">${PALACE_ENERGY[ky.dp]}</div>
       </div>
     </div>
-    <div class="card" style="border-color:#34d39944;grid-column:1/-1">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
-        <span style="font-size:1.2rem">🧭</span>
-        <span style="font-size:0.7rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">今日の吉方位（三盤一致）</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div style="background:var(--surface);border-radius:10px;padding:10px">
-          <div style="font-size:0.65rem;font-weight:700;color:#34d399;letter-spacing:.05em;margin-bottom:8px">✅ 吉方位</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
-            ${kihouHtml}
-          </div>
-        </div>
-        <div style="background:var(--surface);border-radius:10px;padding:10px">
-          <div style="font-size:0.65rem;font-weight:700;color:#ef4444;letter-spacing:.05em;margin-bottom:8px">⛔ 避ける方角</div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            ${kyoHtml}
-          </div>
-        </div>
-      </div>
-      <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.6">外出・引越・旅行の方角選びに。吉方位に向かって出かけると運気アップ、凶方位は今日だけ避けて。</div>
-    </div>
     <div class="card sabian-wide" style="border-color:#c084fc44;grid-column:1/-1">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">
         <span style="font-size:1.3rem">🔮</span>
@@ -918,6 +900,23 @@ function render() {
       </div>
     </div>
   `;
+
+  // 吉方位カード（カレンダー上部）
+  document.getElementById('kihouCard').innerHTML =
+    '<div class="section-title" style="margin-bottom:14px">🧭 今日の吉方位（三盤一致）</div>'
+    + '<div class="card" style="border-color:#34d39944;margin-bottom:20px">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    + '<div style="background:var(--surface);border-radius:10px;padding:10px">'
+    + '<div style="font-size:0.65rem;font-weight:700;color:#34d399;letter-spacing:.05em;margin-bottom:8px">✅ 吉方位</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + kihouHtml + '</div>'
+    + '</div>'
+    + '<div style="background:var(--surface);border-radius:10px;padding:10px">'
+    + '<div style="font-size:0.65rem;font-weight:700;color:#ef4444;letter-spacing:.05em;margin-bottom:8px">⛔ 避ける方角</div>'
+    + '<div style="display:flex;flex-direction:column;gap:4px">' + kyoHtml + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.6">外出・引越・旅行の方角選びに。吉方位に向かって出かけると運気アップ、凶方位は今日だけ避けて。</div>'
+    + '</div>';
 
   // Week grid
   const today = new Date();
